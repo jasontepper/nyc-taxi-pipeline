@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# dbt
+nyc_taxi_dbt/target/
+nyc_taxi_dbt/dbt_packages/
+nyc_taxi_dbt/logs/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+
+# Credentials
+.env
+profiles.yml
+*.p8
