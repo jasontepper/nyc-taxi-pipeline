@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: fact_trips
+    description: "One row per taxi trip"
+    columns:
+      - name: trip_id
+        description: "Surrogate primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: pickup_location_id
+        description: "FK to dim_zones"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_zones')
+              field: zone_id
+      - name: dropoff_location_id
+        description: "FK to dim_zones"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_zones')
+              field: zone_id
+      - name: total_amount
+        description: "Total fare amount"
+        data_tests:
+          - not_null
+      - name: payment_type
+        description: "Payment method code"
+        data_tests:
+          - accepted_values:
+              values: [0, 1, 2, 3, 4, 5, 6]
+              
+  - name: dim_zones
+    description: "NYC taxi zone reference"
+    columns:
+      - name: zone_id
+        description: "Primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: borough
+        description: "NYC borough"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island', 'EWR', 'N/A', 'Unknown']
+
+  - name: dim_time
+    description: "Time dimension"
+    columns:
+      - name: time_id
+        description: "Primary key"
+        data_tests:
+          - unique
+          - not_null

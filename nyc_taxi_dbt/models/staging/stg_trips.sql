@@ -37,12 +37,13 @@ renamed as (
     from source
 
     where
-        -- basic sanity filters
-        tpep_pickup_datetime >= '2023-01-01'
-        and tpep_pickup_datetime < '2025-01-01'
-        and trip_distance > 0
-        and fare_amount > 0
-        and total_amount > 0
+    try_to_timestamp(tpep_pickup_datetime) >= '2023-01-01'
+    and try_to_timestamp(tpep_pickup_datetime) < '2025-01-01'
+    and trip_distance > 0
+    and fare_amount > 0
+    and total_amount > 0
+    and datediff('minute', try_to_timestamp(tpep_pickup_datetime), try_to_timestamp(tpep_dropoff_datetime)) > 0
+    and datediff('minute', try_to_timestamp(tpep_pickup_datetime), try_to_timestamp(tpep_dropoff_datetime)) <= 1440
 )
 
 select * from renamed

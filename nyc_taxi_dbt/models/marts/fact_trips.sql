@@ -6,42 +6,54 @@ dim_time as (
     select * from {{ ref('dim_time') }}
 ),
 
+deduplicated as (
+    select *,
+        row_number() over (
+            partition by pickup_datetime, dropoff_datetime, pickup_location_id,
+                         dropoff_location_id, total_amount, vendor_id, tip_amount
+            order by pickup_datetime
+        ) as row_num
+    from trips
+),
+
 final as (
     select
-        {{ dbt_utils.generate_surrogate_key(['pickup_datetime', 'pickup_location_id', 'dropoff_location_id', 'total_amount']) }} as trip_id,
+        {{ dbt_utils.generate_surrogate_key(['pickup_datetime', 'dropoff_datetime', 'pickup_location_id', 'dropoff_location_id', 'total_amount', 'vendor_id', 'tip_amount', 'row_num']) }} as trip_id,
 
         -- foreign keys
-        t.pickup_location_id,
-        t.dropoff_location_id,
+        d.pickup_location_id,
+        d.dropoff_location_id,
         dt.time_id,
 
         -- trip attributes
-        t.vendor_id,
-        t.rate_code_id,
-        t.payment_type,
-        t.store_and_fwd_flag,
-        t.passenger_count,
-        t.trip_distance,
-        t.trip_duration_minutes,
+        d.vendor_id,
+        d.rate_code_id,
+        d.payment_type,
+        d.store_and_fwd_flag,
+        d.passenger_count,
+        d.trip_distance,
+        d.trip_duration_minutes,
 
         -- financials
-        t.fare_amount,
-        t.extra,
-        t.mta_tax,
-        t.tip_amount,
-        t.tolls_amount,
-        t.improvement_surcharge,
-        t.congestion_surcharge,
-        t.airport_fee,
-        t.total_amount,
+        d.fare_amount,
+        d.extra,
+        d.mta_tax,
+        d.tip_amount,
+        d.tolls_amount,
+        d.improvement_surcharge,
+        d.congestion_surcharge,
+        d.airport_fee,
+        d.total_amount,
 
         -- timestamps
-        try_to_timestamp(t.pickup_datetime)     as pickup_datetime,
-        try_to_timestamp(t.dropoff_datetime)    as dropoff_datetime
+        try_to_timestamp(d.pickup_datetime)     as pickup_datetime,
+        try_to_timestamp(d.dropoff_datetime)    as dropoff_datetime
 
-    from trips t
+    from deduplicated d
     left join dim_time dt
-        on date_trunc('hour', try_to_timestamp(t.pickup_datetime)) = dt.time_hour
+        on date_trunc('hour', try_to_timestamp(d.pickup_datetime)) = dt.time_hour
+
+    where d.row_num = 1
 )
 
 select * from final
