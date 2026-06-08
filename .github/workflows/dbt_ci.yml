@@ -25,8 +25,8 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_dbt_key.p8
-          chmod 600 ~/.ssh/snowflake_dbt_key.p8
-
+          chmod 644 ~/.ssh/snowflake_dbt_key.p8
+          
       - name: Write dbt profiles.yml
         run: |
           mkdir -p ~/.dbt
