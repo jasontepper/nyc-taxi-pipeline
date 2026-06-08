@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: nyc_taxi
+    schema: raw
+    tables:
+      - name: trips
+        description: "Raw NYC TLC yellow cab trip records"
