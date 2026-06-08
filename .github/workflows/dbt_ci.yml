@@ -1,0 +1,81 @@
+name: dbt CI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write Snowflake private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > ~/.ssh/snowflake_dbt_key.p8
+          chmod 600 ~/.ssh/snowflake_dbt_key.p8
+
+      - name: Write dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          nyc_taxi_dbt:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: yg09383.us-east-2.aws
+                user: dbt_user
+                private_key_path: /root/.ssh/snowflake_dbt_key.p8
+                role: dbt_role
+                warehouse: dbt_wh
+                database: nyc_taxi
+                schema: dev
+                threads: 4
+          EOF
+
+      - name: Install dbt packages
+        working-directory: nyc_taxi_dbt
+        run: dbt deps
+
+      - name: Run dbt build
+        working-directory: nyc_taxi_dbt
+        run: dbt build --select stg_trips dim_zones dim_time fact_trips
+
+      - name: Notify Discord on success
+        if: success()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "✅ dbt build passed",
+                "description": "All models and tests passed successfully.",
+                "color": 3066993
+              }]
+            }'
+
+      - name: Notify Discord on failure
+        if: failure()
+        run: |
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ dbt build failed",
+                "description": "One or more models or tests failed. Check GitHub Actions for details.",
+                "color": 15158332
+              }]
+            }'
