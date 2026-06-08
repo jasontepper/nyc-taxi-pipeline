@@ -21,6 +21,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Write Snowflake private key
+        env:
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+        run: |
+          mkdir -p /tmp/snowflake
+          echo "$SNOWFLAKE_PRIVATE_KEY" > /tmp/snowflake/rsa_key.p8
+          chmod 777 /tmp/snowflake/rsa_key.p8
+
       - name: Write dbt profiles.yml
         run: |
           mkdir -p ~/.dbt
@@ -32,7 +40,7 @@ jobs:
                 type: snowflake
                 account: yg09383.us-east-2.aws
                 user: dbt_user
-                private_key: $SNOWFLAKE_PRIVATE_KEY
+                private_key_path: /tmp/snowflake/rsa_key.p8
                 role: dbt_role
                 warehouse: dbt_wh
                 database: nyc_taxi
@@ -46,8 +54,6 @@ jobs:
 
       - name: Run dbt build
         working-directory: nyc_taxi_dbt
-        env:
-          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
         run: dbt build --select stg_trips dim_zones dim_time fact_trips
 
       - name: Notify Discord on success
