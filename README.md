@@ -2,6 +2,24 @@
 
 End-to-end ELT pipeline processing 60M+ NYC TLC yellow cab trips (2023-2024).
 
+## Pipeline
+
+```mermaid
+flowchart LR
+    A[NYC TLC<br/>Parquet Files] -->|Python<br/>ingestion| B[(Snowflake<br/>RAW)]
+    B -->|dbt staging<br/>clean + cast| C[stg_trips]
+    C -->|dbt marts| D[fact_trips]
+    C --> E[dim_time]
+    F[taxi_zones<br/>seed] -->|dbt marts| G[dim_zones]
+    D --> H[Streamlit<br/>Dashboard]
+    E --> H
+    G --> H
+    D -.->|16 dbt tests| I{Data Quality}
+    J[GitHub Actions] -->|on every commit| K[dbt build]
+    K -->|on failure| L[Discord Alert]
+    M[Terraform] -.->|provisions| B
+```
+
 ## Architecture
 - **Ingestion:** Python + Snowflake connector loads monthly Parquet files into Snowflake raw schema
 - **Transformation:** dbt Core with staging → marts layers (fact_trips, dim_zones, dim_time)
