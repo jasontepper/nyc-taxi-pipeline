@@ -18,3 +18,4 @@ nyc_taxi_dbt/logs/
 .env
 profiles.yml
 *.p8
+.DS_Store
